@@ -110,18 +110,20 @@ Implemented on `main`:
 - Alembic migrations;
 - PostgreSQL and pgvector setup;
 - versioned document persistence and idempotent version registration;
-- user persistence, Argon2 password hashing, and JWT security primitives;
+- registration, OAuth2-compatible login, and authenticated-user resolution;
+- Argon2 password hashing and signed JWT access tokens;
 - deterministic mock LLM provider;
 - unit, contract, and PostgreSQL integration tests;
 - GitHub Actions workflow.
 
 Under review:
 
-- registration, OAuth2-compatible login, and authenticated-user resolution.
+- authenticated document creation, paginated listing, retrieval, and soft deletion;
+- ownership isolation that returns the same result for foreign and nonexistent resources.
 
 Next engineering milestone:
 
-- authenticated document creation and ownership-scoped access;
+- idempotent document content upload and version creation;
 - deterministic parsing and chunking;
 - one evaluated retrieval path;
 - answer and abstention contracts.

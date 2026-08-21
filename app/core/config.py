@@ -1,4 +1,5 @@
 from functools import lru_cache
+from pathlib import Path
 from typing import Literal
 
 from pydantic import Field, model_validator
@@ -16,6 +17,8 @@ class Settings(BaseSettings):
 
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@db:5432/ai_knowledge"
     REDIS_URL: str = "redis://redis:6379/0"
+    DOCUMENT_STORAGE_ROOT: Path = Path("data")
+    MAX_DOCUMENT_SIZE_BYTES: int = Field(default=5_000_000, gt=0)
 
     JWT_SECRET_KEY: str = DEVELOPMENT_JWT_SECRET
     JWT_ALGORITHM: Literal["HS256"] = "HS256"

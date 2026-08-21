@@ -1,12 +1,21 @@
-from fastapi import APIRouter, HTTPException, Query, Response, status
+from typing import Annotated
 
-from app.api.dependencies import CurrentUser, DatabaseSession
+from fastapi import APIRouter, File, HTTPException, Query, Response, UploadFile, status
+
+from app.api.dependencies import CurrentUser, DatabaseSession, DocumentStorageDependency
 from app.domain.documents.schemas import (
     DocumentCreate,
     DocumentListResponse,
     DocumentResponse,
+    DocumentVersionUploadResponse,
 )
 from app.domain.documents.service import DocumentNotFoundError, DocumentService
+from app.domain.documents.upload import (
+    DocumentTooLargeError,
+    DocumentUploadService,
+    InvalidDocumentContentError,
+    UnsupportedDocumentMediaTypeError,
+)
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
@@ -23,6 +32,66 @@ async def create_document(
     )
     await session.commit()
     return DocumentResponse.model_validate(document)
+
+
+@router.post(
+    "/{document_id}/versions",
+    response_model=DocumentVersionUploadResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def upload_document_version(
+    document_id: str,
+    response: Response,
+    file: Annotated[UploadFile, File()],
+    current_user: CurrentUser,
+    session: DatabaseSession,
+    storage: DocumentStorageDependency,
+) -> DocumentVersionUploadResponse:
+    try:
+        result = await DocumentUploadService(session, storage).upload(
+            file,
+            owner_id=current_user.id,
+            document_id=document_id,
+            filename=file.filename,
+            content_type=file.content_type,
+        )
+    except DocumentNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found",
+        ) from exc
+    except UnsupportedDocumentMediaTypeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail=str(exc),
+        ) from exc
+    except DocumentTooLargeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+            detail=str(exc),
+        ) from exc
+    except InvalidDocumentContentError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=str(exc),
+        ) from exc
+    finally:
+        await file.close()
+
+    response.status_code = status.HTTP_201_CREATED if result.created else status.HTTP_200_OK
+    version = result.version
+    return DocumentVersionUploadResponse(
+        id=version.id,
+        document_id=version.document_id,
+        version_number=version.version_number,
+        original_filename=version.original_filename,
+        content_type=version.content_type,
+        size_bytes=version.size_bytes,
+        checksum_sha256=version.checksum_sha256,
+        status=version.status,
+        created_at=version.created_at,
+        created=result.created,
+    )
 
 
 @router.get("", response_model=DocumentListResponse)

@@ -112,18 +112,20 @@ Implemented on `main`:
 - versioned document persistence and idempotent version registration;
 - registration, OAuth2-compatible login, and authenticated-user resolution;
 - Argon2 password hashing and signed JWT access tokens;
+- authenticated document creation, listing, retrieval, and soft deletion;
+- ownership isolation for document operations;
 - deterministic mock LLM provider;
 - unit, contract, and PostgreSQL integration tests;
 - GitHub Actions workflow.
 
 Under review:
 
-- authenticated document creation, paginated listing, retrieval, and soft deletion;
-- ownership isolation that returns the same result for foreign and nonexistent resources.
+- streaming `.txt` and `.md` uploads with UTF-8, media-type, and size validation;
+- idempotent and concurrency-safe document version creation;
+- atomic local storage behind a replaceable storage boundary.
 
 Next engineering milestone:
 
-- idempotent document content upload and version creation;
 - deterministic parsing and chunking;
 - one evaluated retrieval path;
 - answer and abstention contracts.
@@ -195,6 +197,7 @@ python -m pip check
 
 - the end-to-end document-to-answer path is not implemented yet;
 - authentication has no refresh tokens, password recovery, MFA, or rate limiting yet;
+- local document storage is intended for development and single-instance deployments;
 - no retrieval benchmark has been published yet.
 
 These limitations are tracked openly so future claims can be supported by working code and measured results.

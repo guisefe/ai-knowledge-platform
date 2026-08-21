@@ -5,13 +5,16 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import InvalidAccessTokenError, decode_access_token
+from app.domain.documents.upload import DocumentStorage
 from app.domain.users.models import User
 from app.infra.database import get_db_session
+from app.infra.document_storage import get_document_storage
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token", auto_error=False)
 
 DatabaseSession = Annotated[AsyncSession, Depends(get_db_session)]
 BearerToken = Annotated[str | None, Depends(oauth2_scheme)]
+DocumentStorageDependency = Annotated[DocumentStorage, Depends(get_document_storage)]
 
 
 def _unauthorized() -> HTTPException:

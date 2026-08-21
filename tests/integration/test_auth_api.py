@@ -1,20 +1,7 @@
 from uuid import uuid4
 
 import pytest
-from httpx import ASGITransport, AsyncClient
-
-from app.infra.database import engine
-from app.main import app
-
-
-@pytest.fixture
-async def client() -> AsyncClient:
-    async with AsyncClient(
-        transport=ASGITransport(app=app),
-        base_url="http://test",
-    ) as test_client:
-        yield test_client
-    await engine.dispose()
+from httpx import AsyncClient
 
 
 def unique_email() -> str:

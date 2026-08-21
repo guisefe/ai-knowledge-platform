@@ -17,6 +17,71 @@ class VersionRegistration:
     created: bool
 
 
+@dataclass(frozen=True, slots=True)
+class DocumentPage:
+    items: list[Document]
+    total: int
+
+
+class DocumentService:
+    """Manage logical documents inside an authenticated ownership scope."""
+
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def create(self, *, owner_id: str, title: str) -> Document:
+        document = Document(owner_id=owner_id, title=title.strip())
+        self._session.add(document)
+        await self._session.flush()
+        return document
+
+    async def list(self, *, owner_id: str, limit: int, offset: int) -> DocumentPage:
+        ownership_scope = (
+            Document.owner_id == owner_id,
+            Document.deleted_at.is_(None),
+        )
+        items = list(
+            (
+                await self._session.scalars(
+                    select(Document)
+                    .where(*ownership_scope)
+                    .order_by(Document.created_at.desc(), Document.id.desc())
+                    .limit(limit)
+                    .offset(offset)
+                )
+            ).all()
+        )
+        total = await self._session.scalar(select(func.count(Document.id)).where(*ownership_scope))
+        return DocumentPage(items=items, total=total or 0)
+
+    async def get(self, *, owner_id: str, document_id: str) -> Document:
+        document = await self._session.scalar(
+            select(Document).where(
+                Document.id == document_id,
+                Document.owner_id == owner_id,
+                Document.deleted_at.is_(None),
+            )
+        )
+        if document is None:
+            raise DocumentNotFoundError("Document was not found in the current ownership scope")
+        return document
+
+    async def soft_delete(self, *, owner_id: str, document_id: str) -> None:
+        document = await self._session.scalar(
+            select(Document)
+            .where(
+                Document.id == document_id,
+                Document.owner_id == owner_id,
+            )
+            .with_for_update()
+        )
+        if document is None:
+            raise DocumentNotFoundError("Document was not found in the current ownership scope")
+
+        document.soft_delete()
+        await self._session.flush()
+
+
 class DocumentVersionService:
     """Register versions inside a transaction owned by the caller."""
 

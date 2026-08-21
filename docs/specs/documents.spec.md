@@ -4,13 +4,16 @@
 
 Store logical documents and immutable content versions so ingestion is idempotent and every retrieved passage has traceable provenance.
 
-## Target endpoints
+## Implemented document identity endpoints
 
 - `POST /api/v1/documents`
-- `POST /api/v1/documents/{document_id}/versions`
 - `GET /api/v1/documents`
 - `GET /api/v1/documents/{document_id}`
 - `DELETE /api/v1/documents/{document_id}`
+
+The content ingestion milestone adds:
+
+- `POST /api/v1/documents/{document_id}/versions`
 
 ## Lifecycle
 
@@ -27,6 +30,10 @@ Supported version statuses:
 ## Rules
 
 - access is scoped to the authenticated owner or organization;
+- owner identity is derived from the access token and never accepted from the payload;
+- lists are paginated, deterministically ordered, and exclude soft-deleted documents;
+- foreign and nonexistent document identifiers return the same `404` contract;
+- repeated deletion by the owner is idempotent;
 - the first upload creates document version 1;
 - changed content creates the next version;
 - identical content does not create another version;

@@ -109,20 +109,19 @@ Implemented on `main`:
 - asynchronous SQLAlchemy database foundation;
 - Alembic migrations;
 - PostgreSQL and pgvector setup;
-- initial user model;
+- versioned document persistence and idempotent version registration;
+- user persistence, Argon2 password hashing, and JWT security primitives;
 - deterministic mock LLM provider;
-- unit and contract tests;
+- unit, contract, and PostgreSQL integration tests;
 - GitHub Actions workflow.
 
 Under review:
 
-- document persistence and lifecycle model in [PR #1](https://github.com/guisefe/ai-knowledge-platform/pull/1);
-- reproducible package installation and quality checks on `fix/ci-quality-foundation`.
+- registration, OAuth2-compatible login, and authenticated-user resolution.
 
 Next engineering milestone:
 
-- document identity and version persistence;
-- idempotent upload;
+- authenticated document creation and ownership-scoped access;
 - deterministic parsing and chunking;
 - one evaluated retrieval path;
 - answer and abstention contracts.
@@ -193,8 +192,7 @@ python -m pip check
 ## Known limitations
 
 - the end-to-end document-to-answer path is not implemented yet;
-- PostgreSQL integration tests are not part of the current CI workflow;
-- authentication is not ready for production use;
+- authentication has no refresh tokens, password recovery, MFA, or rate limiting yet;
 - no retrieval benchmark has been published yet.
 
 These limitations are tracked openly so future claims can be supported by working code and measured results.

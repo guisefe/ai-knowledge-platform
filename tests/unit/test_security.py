@@ -46,10 +46,12 @@ def test_expired_access_token_is_rejected() -> None:
 
 def test_tampered_access_token_is_rejected() -> None:
     token = create_access_token("user-123")
-    replacement = "a" if token[-1] != "a" else "b"
+    header, payload, signature = token.split(".")
+    replacement = "a" if signature[0] != "a" else "b"
+    tampered_signature = f"{replacement}{signature[1:]}"
 
     with pytest.raises(InvalidAccessTokenError):
-        decode_access_token(f"{token[:-1]}{replacement}")
+        decode_access_token(f"{header}.{payload}.{tampered_signature}")
 
 
 def test_production_rejects_default_jwt_secret() -> None:

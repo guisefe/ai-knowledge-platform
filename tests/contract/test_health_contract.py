@@ -1,21 +1,25 @@
-from fastapi.testclient import TestClient
+from httpx import ASGITransport, AsyncClient
 
 from app.main import app
 
 
-def test_health_endpoint_contract() -> None:
-    client = TestClient(app)
-
-    response = client.get("/api/v1/health")
+async def test_health_endpoint_contract() -> None:
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        response = await client.get("/api/v1/health")
 
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
 
 
-def test_root_endpoint_contract() -> None:
-    client = TestClient(app)
-
-    response = client.get("/")
+async def test_root_endpoint_contract() -> None:
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        response = await client.get("/")
 
     assert response.status_code == 200
 

@@ -114,15 +114,12 @@ Implemented on `main`:
 - Argon2 password hashing and signed JWT access tokens;
 - authenticated document creation, listing, retrieval, and soft deletion;
 - ownership isolation for document operations;
+- streaming `.txt` and `.md` uploads with UTF-8, media-type, and size validation;
+- idempotent and concurrency-safe document version creation;
+- atomic local storage behind a replaceable storage boundary;
 - deterministic mock LLM provider;
 - unit, contract, and PostgreSQL integration tests;
 - GitHub Actions workflow.
-
-Under review:
-
-- streaming `.txt` and `.md` uploads with UTF-8, media-type, and size validation;
-- idempotent and concurrency-safe document version creation;
-- atomic local storage behind a replaceable storage boundary.
 
 Next engineering milestone:
 
@@ -154,10 +151,11 @@ Tests prioritize idempotency, version transitions, ownership isolation, citation
 
 ## Run locally
 
-Create the environment file and install the project:
+Create the environment file, start PostgreSQL, and install the project:
 
 ```bash
 cp .env.example .env
+docker compose up -d db
 python -m pip install -e ".[dev]"
 ```
 
@@ -174,6 +172,12 @@ curl http://localhost:8000/api/v1/health
 ```
 
 Interactive documentation is available at `http://localhost:8000/docs`.
+
+Alternatively, start both the API and PostgreSQL with Docker Compose:
+
+```bash
+docker compose up --build
+```
 
 ## Quality checks
 

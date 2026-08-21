@@ -16,7 +16,6 @@ class Settings(BaseSettings):
     API_V1_PREFIX: str = "/api/v1"
 
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@db:5432/ai_knowledge"
-    REDIS_URL: str = "redis://redis:6379/0"
     DOCUMENT_STORAGE_ROOT: Path = Path("data")
     MAX_DOCUMENT_SIZE_BYTES: int = Field(default=5_000_000, gt=0)
 
@@ -28,12 +27,6 @@ class Settings(BaseSettings):
 
     LLM_PROVIDER: str = "mock"
     LLM_MODEL: str = "mock-model"
-    LLM_BASE_URL: str = "http://ollama:11434"
-
-    EMBEDDING_PROVIDER: str = "mock"
-    EMBEDDING_MODEL: str = "mock-embedding-model"
-
-    VECTOR_STORE: str = "pgvector"
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

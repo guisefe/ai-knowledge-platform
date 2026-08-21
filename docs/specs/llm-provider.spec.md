@@ -10,14 +10,19 @@ class LLMProvider:
     async def generate(self, request: LLMRequest) -> LLMResponse:
         ...
 
-## Providers
+## Current baseline
 
-### V1
+The repository currently implements:
 
-- mock
-- ollama
+- `mock`, for deterministic unit and contract tests.
 
-### Future
+No runtime generation provider is part of the implemented application yet.
+
+## First evaluated adapter
+
+An Ollama-compatible adapter may be introduced when the document-to-answer flow requires generation. It must be evaluated as part of the same versioned RAG configuration as retrieval and prompting.
+
+## Deferred adapters
 
 - openai
 - azure_openai
@@ -28,7 +33,7 @@ class LLMProvider:
 ## Rules
 
 - tests must use mock provider;
-- local development must use Ollama provider by default;
+- the application defaults to the mock provider until a generation adapter is implemented;
 - provider must be selected by environment configuration;
 - provider errors must be handled and logged;
 - services must depend on the interface, not on concrete providers.

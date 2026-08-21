@@ -9,24 +9,10 @@ services:
       - .:/workspace
     env_file:
       - .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/ai_knowledge
     depends_on:
       db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-
-  worker:
-    build: .
-    container_name: ai-knowledge-worker
-    command: rq worker documents
-    volumes:
-      - .:/workspace
-    env_file:
-      - .env
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
         condition: service_healthy
 
   db:
@@ -42,17 +28,6 @@ services:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d ai_knowledge"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
-  redis:
-    image: redis:7-alpine
-    container_name: ai-knowledge-redis
-    ports:
-      - "6379:6379"
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 5s
       retries: 10

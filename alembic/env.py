@@ -5,9 +5,10 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
-from app.infra.database import Base
-from app.domain.users.models import User  # noqa: F401
 from app.core.config import settings
+from app.domain.documents.models import Document  # noqa: F401
+from app.domain.users.models import User  # noqa: F401
+from app.infra.database import Base
 
 config = context.config
 

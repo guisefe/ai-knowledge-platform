@@ -1,248 +1,200 @@
-# AI Knowledge Backend
+# AI Knowledge Platform
 
-[![CI](https://github.com/guisefe/ai-knowledge-plataform/actions/workflows/ci.yml/badge.svg)](https://github.com/guisefe/ai-knowledge-plataform/actions/workflows/ci.yml)
+[![CI](https://github.com/guisefe/ai-knowledge-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/guisefe/ai-knowledge-platform/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/Python-3.12-blue)
 ![FastAPI](https://img.shields.io/badge/FastAPI-Backend-009688)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-pgvector-336791)
 ![Status](https://img.shields.io/badge/status-active%20development-orange)
 
-AI Knowledge Backend is a spec-driven backend platform for building AI-powered knowledge systems over long-form documents and structured data.
+An evidence-first backend for turning versioned operational documents into auditable answers.
 
-The project explores how Retrieval-Augmented Generation, safe Text-to-SQL, local-first LLM providers, async persistence, migrations, tests, and CI can be combined inside a pragmatic backend architecture.
+Every answer must identify the supporting passages and document version used. When the available evidence is insufficient, the system must refuse to answer instead of producing an unsupported response.
 
-It is not a chatbot demo. It is a backend engineering project focused on architecture, reproducibility, testability, and useful AI integration.
+## The problem
 
-## Why this project exists
+Operational teams depend on policies, manuals, and procedures that change over time. Finding a plausible answer is not enough: users need to know which source supports it and whether that source is still current.
 
-Most AI demos stop at a simple chat interface.
+This project focuses on the backend controls required to make document-based answers traceable, testable, and safe to integrate with other systems.
 
-Real systems need more than that. They need authentication, persistence, migrations, deterministic tests, clear boundaries between domain logic and model providers, and a way to retrieve grounded context before asking a model to answer.
+## Primary use case
 
-AI Knowledge Backend focuses on that backend layer.
+An operations analyst asks:
 
-The goal is to make documents and structured data queryable through natural language while keeping the system testable, extensible, and provider-agnostic.
+> What is the current procedure for cancelling a contract after an invoice has been issued?
 
-## Core capabilities
+A successful response must contain:
 
-The project is being designed to support:
+- a concise answer;
+- the exact supporting passages;
+- the document and version used;
+- retrieval metadata;
+- a request identifier for tracing.
 
-- ingestion of long-form documents;
-- text parsing and chunking;
-- retrieval over indexed document chunks;
-- grounded answers with source references;
-- pluggable LLM providers;
-- local-first model execution;
-- safe Text-to-SQL patterns;
-- async database access;
-- database migrations;
-- contract and unit tests.
+If the indexed documents do not support a reliable answer, the response status is `insufficient_evidence`.
 
-## Demo corpus
+### Target API contract
 
-The demo corpus uses classic public-domain literature instead of random synthetic documents.
+```json
+{
+  "status": "answered",
+  "answer": "The cancellation must be reviewed by the billing team before it is approved.",
+  "citations": [
+    {
+      "document_id": "doc_123",
+      "document_version": 3,
+      "chunk_id": "chunk_184",
+      "page": 14,
+      "excerpt": "Cancellations requested after invoicing require billing review."
+    }
+  ],
+  "retrieval": {
+    "strategy": "vector",
+    "top_k": 5
+  },
+  "request_id": "req_abc"
+}
+```
 
-The goal is to test retrieval and grounded answers over real long-form texts that are culturally recognizable, structurally rich, and meaningful enough to demonstrate reasoning.
+The contract above defines the MVP target. The query endpoint is not implemented yet.
 
-Initial corpus:
+## Product guarantees
 
-| Work | Author | Purpose |
-|---|---|---|
-| The Grand Inquisitor | Fyodor Dostoyevsky | MVP document for questions about freedom, authority, conscience, and moral responsibility |
-| Inferno | Dante Alighieri | Planned document for allegory, symbolic structure, moral order, and poetic narrative |
-| The Republic | Plato | Planned document for justice, education, political order, and philosophical reasoning |
+The MVP is complete only when it can demonstrate that:
 
-The first MVP document will be The Grand Inquisitor because it is short enough for an initial implementation, but rich enough to test retrieval over complex ideas.
+- document ingestion is idempotent;
+- document updates preserve version history;
+- retrieval never crosses an ownership boundary;
+- every answer cites stored source passages;
+- unsupported questions produce an explicit abstention;
+- retrieval quality and latency are measured against a versioned dataset.
 
-## Development approach
+## Scope
 
-This project follows a spec-driven development workflow:
+| In the RAG MVP | Deliberately deferred |
+|---|---|
+| UTF-8 text and Markdown documents | PDF parsing |
+| Document versioning | Text-to-SQL |
+| Parsing and deterministic chunking | Autonomous agents |
+| PostgreSQL and pgvector retrieval | Multiple vector databases |
+| Answers with citations or abstention | Web interface |
+| Versioned evaluation dataset | Multiple production LLM providers |
 
-    Problem -> Requirements -> Specs -> Tests -> Implementation
+Deferring these capabilities is a scope decision, not a claim that they are unimportant.
 
-Before implementing a feature, the expected behavior is documented through requirements, technical specs, or architecture decision records.
+## Demo datasets
 
-This keeps the project from becoming a random AI prototype and allows it to evolve as a small but coherent backend platform.
+The business scenario uses a fictional organization with versioned operational policies and procedures. It demonstrates document updates, conflicting guidance, stale sources, and questions without sufficient evidence without exposing real company data.
+
+A separate public-domain literature corpus uses Dostoyevsky, Dante, and Plato to evaluate retrieval over long, conceptually dense texts. It is an evaluation corpus, not the business use case.
+
+## Target architecture
+
+```mermaid
+flowchart TD
+    A["Document API"] --> B["Ingestion pipeline"]
+    B --> C["PostgreSQL + pgvector"]
+    D["Query API"] --> C
+    C --> E["Answer with evidence"]
+    D --> E
+```
+
+Provider interfaces are introduced only at external boundaries that are expected to change. The domain should not depend directly on a model vendor SDK.
 
 ## Current status
 
-Implemented:
+Implemented on `main`:
 
-- product requirements;
-- technical specs;
-- architecture decision records;
 - FastAPI application foundation;
-- healthcheck endpoint;
-- GitHub Actions CI;
-- SQLAlchemy async database foundation;
+- liveness endpoint;
+- asynchronous SQLAlchemy database foundation;
 - Alembic migrations;
 - PostgreSQL and pgvector setup;
-- initial User model;
-- LLM provider abstraction with mock provider.
+- initial user model;
+- deterministic mock LLM provider;
+- unit and contract tests;
+- GitHub Actions workflow.
 
-In progress:
+Under review:
 
-- authentication flow;
-- document ingestion;
-- chunking service;
-- embedding provider abstraction;
-- RAG query endpoint.
+- document persistence and lifecycle model in [PR #1](https://github.com/guisefe/ai-knowledge-platform/pull/1);
+- reproducible package installation and quality checks on `fix/ci-quality-foundation`.
 
-Planned:
+Next engineering milestone:
 
-- PostgreSQL and pgvector retrieval;
-- local embedding models;
-- Ollama provider;
-- PDF or long-form text parsing;
-- safe Text-to-SQL;
-- structured logs and observability.
+- document identity and version persistence;
+- idempotent upload;
+- deterministic parsing and chunking;
+- one evaluated retrieval path;
+- answer and abstention contracts.
 
-## Tech stack
+## Engineering approach
 
-| Layer | Technology |
-|---|---|
-| API | FastAPI |
-| Language | Python 3.12 |
-| Database | PostgreSQL |
-| Vector search | pgvector |
-| ORM | SQLAlchemy 2.0 async |
-| Migrations | Alembic |
-| Queue and cache | Redis and RQ |
-| LLM provider | Mock first, Ollama planned |
-| Testing | Pytest |
-| Quality | Ruff and Mypy |
-| Environment | Docker Compose and GitHub Codespaces |
-| CI | GitHub Actions |
+### Measure before expanding
 
-## Architecture principles
+A fluent answer is not evidence that retrieval works. Changes to parsing, chunking, embeddings, ranking, or prompting must be evaluated against the same dataset.
 
-### Open-source first
+### Keep abstractions at real boundaries
 
-The first version should run without paid APIs or proprietary model providers.
+LLM, embedding, storage, and retrieval implementations may change. Internal factories, interfaces, and layers are not added without a concrete use case.
 
-### Provider abstraction
+### Test behavior, not implementation shape
 
-LLM and embedding providers should be replaceable.
+Tests prioritize idempotency, version transitions, ownership isolation, citations, failure recovery, and abstention. Schema assertions are used only when the database contract itself is the behavior under test.
 
-The domain should not depend directly on Ollama, OpenAI, Anthropic, Azure OpenAI, or any specific vendor.
+## Technology
 
-### Pragmatic design
+- Python 3.12 and FastAPI;
+- PostgreSQL with pgvector;
+- SQLAlchemy 2.0 async and Alembic;
+- Pytest, Ruff, and Mypy;
+- Docker Compose and GitHub Actions.
 
-The project avoids abstractions that do not solve a real problem.
+## Run locally
 
-Abstractions are introduced only where the system is expected to change, such as LLM providers, embedding providers, vector stores, and document parsers.
+Create the environment file and install the project:
 
-### Testable by design
+```bash
+cp .env.example .env
+python -m pip install -e ".[dev]"
+```
 
-Core behavior should be testable without calling real LLMs.
+Start the API:
 
-Mock providers keep tests deterministic, fast, and reliable.
+```bash
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
 
-### API-first
+Check the API:
 
-The backend is designed to be integrated with different clients, including web applications, internal tools, automations, bots, BI platforms, and enterprise systems.
+```bash
+curl http://localhost:8000/api/v1/health
+```
 
-## Project structure
-
-    app/
-      api/
-      core/
-      domain/
-        documents/
-        embeddings/
-        llm/
-        rag/
-        text_to_sql/
-        users/
-      infra/
-      workers/
-
-    docs/
-      product/
-      specs/
-      adr/
-      architecture/
-      api/
-
-    tests/
-      unit/
-      integration/
-      contract/
-
-## Running locally
-
-Create an environment file:
-
-    cp .env.example .env
-
-Install dependencies:
-
-    python -m pip install -e ".[dev]"
-
-Run the API:
-
-    uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-
-Healthcheck:
-
-    curl http://localhost:8000/api/v1/health
-
-Interactive API docs:
-
-    http://localhost:8000/docs
+Interactive documentation is available at `http://localhost:8000/docs`.
 
 ## Quality checks
 
-    python -m ruff check .
-    python -m mypy app
-    python -m pytest
+```bash
+python -m ruff check .
+python -m ruff format --check .
+python -m mypy app
+python -m pytest
+python -m pip check
+```
 
-## Roadmap
+## Documentation
 
-### Sprint 1 — Backend foundation
+- [Product brief](docs/product/product-brief.md)
+- [Product requirements](docs/product/requirements.md)
+- [Success metrics](docs/product/success-metrics.md)
+- [Architecture decisions](docs/adr)
+- [Technical specifications](docs/specs)
 
-- [x] FastAPI foundation
-- [x] async database session
-- [x] Alembic setup
-- [x] User model
-- [ ] authentication flow
+## Known limitations
 
-### Sprint 2 — Document ingestion
+- the end-to-end document-to-answer path is not implemented yet;
+- PostgreSQL integration tests are not part of the current CI workflow;
+- authentication is not ready for production use;
+- no retrieval benchmark has been published yet.
 
-- [ ] document metadata model
-- [ ] upload endpoint
-- [ ] text parsing
-- [ ] chunking service
-- [ ] indexing workflow
-
-### Sprint 3 — RAG MVP
-
-- [x] LLM provider abstraction
-- [ ] embedding provider abstraction
-- [ ] vector retrieval
-- [ ] prompt builder
-- [ ] RAG query endpoint
-
-### Sprint 4 — Text-to-SQL
-
-- [ ] schema registry
-- [ ] SQL generation prompt
-- [ ] SQL validator
-- [ ] safe query executor
-
-## What this project demonstrates
-
-This project demonstrates practical backend engineering for AI systems:
-
-- designing AI features around explicit requirements;
-- building provider-agnostic LLM architecture;
-- using async persistence and database migrations;
-- applying RAG without hiding the full pipeline behind a framework;
-- preparing safe Text-to-SQL patterns;
-- writing contract and unit tests;
-- keeping the project reproducible and CI-validated.
-
-## Positioning
-
-This project sits at the intersection of backend engineering, data engineering, applied AI, and enterprise architecture.
-
-The goal is to show how AI can be integrated into backend systems in a way that is practical, testable, extensible, and useful.
+These limitations are tracked openly so future claims can be supported by working code and measured results.

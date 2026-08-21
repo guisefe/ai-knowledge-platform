@@ -2,35 +2,46 @@
 
 ## Objective
 
-Allow authenticated users to upload, list, inspect, and delete documents.
+Store logical documents and immutable content versions so ingestion is idempotent and every retrieved passage has traceable provenance.
 
-## Endpoints
+## Target endpoints
 
-POST /api/v1/documents
-GET /api/v1/documents
-GET /api/v1/documents/{document_id}
-DELETE /api/v1/documents/{document_id}
+- `POST /api/v1/documents`
+- `POST /api/v1/documents/{document_id}/versions`
+- `GET /api/v1/documents`
+- `GET /api/v1/documents/{document_id}`
+- `DELETE /api/v1/documents/{document_id}`
 
-## Supported Statuses
+## Lifecycle
 
-uploaded
-processing
-indexed
-failed
-deleted
+A document is the logical identity visible to the user. A document version owns the checksum, storage location, processing status, and failure reason.
+
+Supported version statuses:
+
+- `uploaded`;
+- `processing`;
+- `indexed`;
+- `failed`;
+- `deleted`.
 
 ## Rules
 
-- document must belong to an authenticated user or organization;
-- unsupported files must be rejected;
-- deleted documents must not appear in retrieval;
-- parser failures must set status to failed;
-- uploaded documents must be processed asynchronously.
+- access is scoped to the authenticated owner or organization;
+- the first upload creates document version 1;
+- changed content creates the next version;
+- identical content does not create another version;
+- only one version is active for current retrieval;
+- previous versions remain available for audit;
+- deleted documents and versions never appear in current retrieval;
+- retries do not duplicate chunks;
+- processing failures preserve an actionable reason.
 
-## Contract Tests
+## Contract and integration tests
 
-- upload supported file returns 201;
-- upload unsupported file returns 415;
-- list documents returns only current user's documents;
-- get missing document returns 404;
-- delete document returns 204.
+- supported upload returns `201`;
+- unsupported media type returns `415`;
+- identical upload returns the existing version;
+- changed content increments the version number;
+- list and get operations never expose another owner's documents;
+- deletion removes the document from current retrieval;
+- migrations and ownership constraints are validated against PostgreSQL.

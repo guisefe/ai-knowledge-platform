@@ -1,96 +1,100 @@
 # Product Requirements
 
-## Functional Requirements
+## Functional requirements
 
-### RF-001: Authentication
+### FR-001: Idempotent document ingestion
 
-The system must allow users to register, log in, and access protected endpoints using JWT.
-
-Acceptance criteria:
-
-- users can register with email and password;
-- passwords are stored using a secure hash;
-- users can log in and receive an access token;
-- protected endpoints reject missing or invalid tokens.
-
-### RF-002: Document Upload
-
-The system must allow authenticated users to upload documents for indexing.
+The system must accept an authorized UTF-8 text or Markdown document and calculate its SHA-256 checksum before processing.
 
 Acceptance criteria:
 
-- accepts supported file types;
-- stores document metadata;
-- sets initial document status as uploaded;
-- returns a document ID;
-- dispatches background processing.
+- unsupported media types are rejected;
+- the original file metadata and checksum are stored;
+- uploading identical content to the same logical document does not create a duplicate version;
+- the same public content may exist in different ownership scopes;
+- processing status and failure reason are visible.
 
-### RF-003: Document Processing
+### FR-002: Document versioning
 
-The system must extract text, split it into chunks, generate embeddings, and store them in a vector store.
-
-Acceptance criteria:
-
-- document status changes to processing while being indexed;
-- document status changes to indexed after successful processing;
-- document status changes to failed when processing fails;
-- chunks preserve reference to the original document.
-
-### RF-004: RAG Query
-
-The system must answer questions using indexed documents as context.
+The system must preserve document history when content changes.
 
 Acceptance criteria:
 
-- receives a natural language question;
-- retrieves semantically relevant chunks;
-- builds a grounded prompt;
-- generates an answer using the configured LLM provider;
-- returns sources used in the answer;
-- logs model, provider, latency, and metadata.
+- versions are numbered within a logical document;
+- checksum and storage location belong to a specific version;
+- one version is explicitly active;
+- previous versions remain available for audit;
+- deleted or inactive versions are excluded from current retrieval.
 
-### RF-005: Safe Text-to-SQL
+### FR-003: Deterministic processing
 
-The system must generate and execute safe SQL queries from natural language questions.
-
-Acceptance criteria:
-
-- only SELECT statements are allowed;
-- destructive commands are blocked;
-- multiple statements are blocked;
-- only allowed tables can be queried;
-- LIMIT is enforced;
-- generated SQL is logged.
-
-### RF-006: LLM Provider Abstraction
-
-The system must use an abstract LLM provider interface.
+The system must extract text, create chunks, generate embeddings, and store them with source provenance.
 
 Acceptance criteria:
 
-- application services do not depend directly on Ollama, OpenAI, Anthropic, or Azure OpenAI;
-- provider is selected using configuration;
-- tests can use a mock provider;
-- new providers can be added without changing API routes.
+- repeating the same processing configuration produces the same chunk boundaries;
+- each chunk references its document version and source location;
+- successful processing changes the version status to `indexed`;
+- failures change the status to `failed` and preserve an actionable reason;
+- retries do not duplicate chunks.
 
-## Non-Functional Requirements
+### FR-004: Scoped retrieval
 
-### RNF-001: Open Source First
+The system must retrieve evidence only from documents the caller is allowed to access.
 
-The first version must run without paid APIs or proprietary model providers.
+Acceptance criteria:
 
-### RNF-002: Testability
+- ownership scope is applied inside the retrieval query;
+- deleted and inactive versions are excluded;
+- `top_k` has a configured maximum;
+- results include document, version, chunk, location, and score;
+- cross-owner retrieval is covered by integration tests.
 
-The system must be testable without requiring real LLM calls.
+### FR-005: Evidence-based answers
 
-### RNF-003: Observability
+The system must answer a question only when retrieved passages provide sufficient support.
 
-The system must provide structured logs and basic runtime metadata.
+Acceptance criteria:
 
-### RNF-004: Security
+- a supported answer includes citations to stored chunks;
+- citations identify the exact document version;
+- unsupported questions return `insufficient_evidence`;
+- the model cannot invent a citation identifier;
+- the response includes a request identifier.
 
-The system must validate inputs, protect private endpoints, and block unsafe SQL.
+### FR-006: Versioned evaluation
 
-### RNF-005: Extensibility
+The system must evaluate retrieval and answer behavior against a curated dataset.
 
-The system must be designed to support future model providers, vector stores, and enterprise integrations.
+Acceptance criteria:
+
+- the dataset includes supported, ambiguous, conflicting, and unsupported questions;
+- reports record dataset and retrieval configuration;
+- evaluation can run without modifying production data;
+- regressions are visible in pull requests.
+
+## Non-functional requirements
+
+### NFR-001: Testability
+
+Domain behavior and API contracts must be testable without calling a real LLM. PostgreSQL-specific behavior must be tested against PostgreSQL with pgvector.
+
+### NFR-002: Security
+
+Uploaded documents are untrusted input. Access control must be applied before evidence is exposed, secrets must not appear in logs, and document content must not grant tools or permissions.
+
+### NFR-003: Observability
+
+Ingestion, retrieval, and generation operations must share a correlation identifier and expose stage latency, outcome, provider configuration, and failure reason without logging sensitive content by default.
+
+### NFR-004: Reproducibility
+
+A clean environment must install the project, apply all migrations, run deterministic tests, and reproduce an evaluation report from versioned configuration.
+
+### NFR-005: Focused extensibility
+
+Provider abstractions are allowed at external boundaries expected to change. New internal interfaces or layers require a concrete second implementation, testing need, or documented architectural constraint.
+
+## Deferred capabilities
+
+Text-to-SQL, autonomous agents, PDF parsing, user interfaces, and multiple vector databases are not part of the RAG MVP.

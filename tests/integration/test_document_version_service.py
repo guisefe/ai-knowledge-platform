@@ -11,7 +11,7 @@ from app.domain.documents.service import (
     VersionRegistration,
 )
 from app.domain.users.models import User
-from app.infra.database import async_session_factory
+from app.infra.database import async_session_factory, engine
 
 
 @pytest.fixture
@@ -22,6 +22,7 @@ async def db_session() -> AsyncSession:
             yield session
         finally:
             await transaction.rollback()
+    await engine.dispose()
 
 
 async def create_document(session: AsyncSession) -> tuple[User, Document]:

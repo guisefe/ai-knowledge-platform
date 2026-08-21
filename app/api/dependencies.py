@@ -8,10 +8,10 @@ from app.core.security import InvalidAccessTokenError, decode_access_token
 from app.domain.users.models import User
 from app.infra.database import get_db_session
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token", auto_error=False)
 
 DatabaseSession = Annotated[AsyncSession, Depends(get_db_session)]
-BearerToken = Annotated[str, Depends(oauth2_scheme)]
+BearerToken = Annotated[str | None, Depends(oauth2_scheme)]
 
 
 def _unauthorized() -> HTTPException:
@@ -23,6 +23,9 @@ def _unauthorized() -> HTTPException:
 
 
 async def get_current_user(token: BearerToken, session: DatabaseSession) -> User:
+    if token is None:
+        raise _unauthorized()
+
     try:
         claims = decode_access_token(token)
     except InvalidAccessTokenError as exc:

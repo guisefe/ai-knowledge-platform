@@ -49,14 +49,17 @@ jobs:
       - name: Run Mypy
         run: python -m mypy app
 
-      - name: Run Pytest
-        run: python -m pytest
-
       - name: Verify database migrations
         run: |
           python -m alembic upgrade head
           python -m alembic downgrade base
           python -m alembic upgrade head
+
+      - name: Run unit and contract tests
+        run: python -m pytest tests/unit tests/contract
+
+      - name: Run PostgreSQL integration tests
+        run: python -m pytest tests/integration
 
       - name: Verify dependency consistency
         run: python -m pip check

@@ -1,4 +1,4 @@
-# ADR-001: Open Source First
+# ADR-001: Local-First Runtime
 
 ## Status
 
@@ -6,38 +6,37 @@ Accepted
 
 ## Context
 
-The project should be useful for portfolio, learning, experimentation, and local development without requiring paid APIs.
+The RAG pipeline must be reproducible in development and evaluation without requiring paid APIs. Provider availability, rate limits, and changing hosted models would make deterministic tests and baseline comparisons harder.
 
-Using proprietary LLMs from the beginning would increase cost, reduce reproducibility, and create vendor lock-in.
+Local execution also has constraints: model quality and latency depend on the available hardware, and a Codespace may not have enough resources for useful generation.
 
 ## Decision
 
-The first version will run using open-source and local-first technologies.
+The first evaluated vertical slice will support a local or deterministic runtime:
 
-The initial stack includes:
+- deterministic mock providers for unit and contract tests;
+- PostgreSQL with pgvector for persistence and retrieval;
+- a local embedding implementation for the first evaluation baseline;
+- an Ollama-compatible generation adapter only when generation is required;
+- Docker Compose for reproducible backing services.
 
-- FastAPI;
-- PostgreSQL;
-- pgvector;
-- Redis;
-- RQ;
-- Ollama-compatible LLM provider;
-- local embedding models;
-- Docker Compose;
-- GitHub Codespaces.
+Redis and a background queue will be introduced only when asynchronous ingestion behavior requires them.
 
 ## Consequences
 
 Positive:
 
-- no paid API required;
-- easier local development;
-- lower cost;
-- better reproducibility;
-- stronger vendor-neutral architecture.
+- tests do not depend on network access or paid APIs;
+- evaluation configuration can be versioned;
+- the core pipeline remains usable in a clean development environment;
+- provider failures do not block domain and API contract testing.
 
 Negative:
 
-- local models may produce lower quality responses than premium APIs;
-- Codespaces resources may limit model execution;
-- future cloud providers will require adapters.
+- local model results may not match premium hosted models;
+- performance varies with hardware;
+- adding a hosted provider later requires a separate adapter and evaluation baseline.
+
+## Revisit when
+
+Revisit this decision when a use case requires quality or throughput that cannot be met locally, or when a hosted provider can be justified by measured cost, latency, and quality.

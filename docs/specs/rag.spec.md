@@ -2,24 +2,45 @@
 
 ## Objective
 
-Answer questions using indexed documents as grounded context.
+Return answers supported by stored document passages and abstain when the available evidence is insufficient.
 
-## Endpoint
+## Target endpoint
 
-POST /api/v1/rag/query
+`POST /api/v1/rag/query`
 
-## Rules
+## Request rules
 
-- empty questions return 422;
-- top_k must have a maximum limit;
-- answer must include sources;
-- if context is insufficient, the system must say it does not have enough information;
-- the system must not invent sources;
-- LLM calls must go through the LLM provider abstraction.
+- an empty question returns `422`;
+- `top_k` has a configured maximum;
+- retrieval scope is derived from authorization, not accepted blindly from the request;
+- inactive, failed, and deleted document versions are excluded.
 
-## Contract Tests
+## Answer contract
 
-- valid query returns answer and sources;
-- empty query returns 422;
-- top_k above maximum returns 422;
-- no context returns a grounded fallback answer.
+An `answered` response includes:
+
+- a concise answer;
+- citations to stored chunk identifiers;
+- document identifier and version for each citation;
+- source location and excerpt;
+- retrieval metadata;
+- a request identifier.
+
+An unsupported response uses `status: insufficient_evidence`, has no generated answer, and does not invent citations.
+
+## Security rules
+
+- ownership filtering occurs inside the retrieval query;
+- retrieved document instructions cannot grant tools, permissions, or additional data access;
+- citation identifiers must resolve to chunks returned by retrieval;
+- raw document content is not written to logs by default.
+
+## Contract and integration tests
+
+- a supported question returns citations from the authorized corpus;
+- an unsupported question returns `insufficient_evidence`;
+- an empty question returns `422`;
+- `top_k` above the configured maximum returns `422`;
+- fabricated citation identifiers are rejected;
+- retrieval cannot return another owner's chunks;
+- every cited chunk belongs to the reported document version.

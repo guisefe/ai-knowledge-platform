@@ -1,27 +1,22 @@
 # Text-to-SQL Spec
 
-## Objective
+## Status
 
-Allow safe natural language querying over structured data.
+Deferred.
 
-## Endpoint
+Text-to-SQL is not part of the evaluated RAG MVP. Keeping it in the first delivery would add a second security model, a second evaluation problem, and a separate execution boundary before the document-to-answer path has been proven.
 
-POST /api/v1/sql/ask
+The capability may return as an independent milestone after the RAG MVP meets its quality gates.
 
-## Rules
+## Future entry criteria
 
-- only SELECT statements are allowed;
-- DROP, DELETE, UPDATE, INSERT, ALTER, TRUNCATE are blocked;
-- multiple statements are blocked;
-- only registered tables are allowed;
-- LIMIT must be enforced;
-- generated SQL must be logged;
-- unsafe SQL must not be executed.
+Work on Text-to-SQL should begin only when:
 
-## Contract Tests
+- the RAG vertical slice is complete and measured;
+- the target database and business use case are explicit;
+- queries execute through a read-only role;
+- allowed schemas and tables are defined;
+- SQL validation and evaluation datasets have owners;
+- latency and operational cost budgets are known.
 
-- SELECT query is accepted;
-- destructive commands are rejected;
-- multiple statements are rejected;
-- queries without LIMIT receive enforced limit;
-- unknown tables are rejected.
+This file intentionally contains no active endpoint contract.

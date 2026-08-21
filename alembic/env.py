@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
 from app.core.config import settings
+from app.domain.documents.models import Document, DocumentVersion  # noqa: F401
 from app.domain.users.models import User  # noqa: F401
 from app.infra.database import Base
 

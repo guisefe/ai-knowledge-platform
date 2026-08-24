@@ -152,6 +152,12 @@ class DocumentVersion(Base):
     )
 
     document: Mapped[Document] = relationship(back_populates="versions")
+    chunks: Mapped[list[DocumentChunk]] = relationship(
+        back_populates="document_version",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        order_by="DocumentChunk.position",
+    )
 
     def start_processing(self) -> None:
         self._transition_to(
@@ -208,3 +214,47 @@ class DocumentVersion(Base):
             )
         self.status = target
         self.updated_at = utc_now()
+
+
+class DocumentChunk(Base):
+    """Ordered source passage produced from one immutable document version."""
+
+    __tablename__ = "document_chunks"
+    __table_args__ = (
+        UniqueConstraint(
+            "document_version_id",
+            "position",
+            name="uq_document_chunks_version_position",
+        ),
+        CheckConstraint("position >= 0", name="ck_document_chunks_non_negative_position"),
+        CheckConstraint("start_offset >= 0", name="ck_document_chunks_non_negative_start"),
+        CheckConstraint("end_offset > start_offset", name="ck_document_chunks_ordered_offsets"),
+        CheckConstraint("char_length(content) > 0", name="ck_document_chunks_non_empty_content"),
+        CheckConstraint(
+            "char_length(content_sha256) = 64",
+            name="ck_document_chunks_sha256_length",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid4()),
+    )
+    document_version_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("document_versions.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    position: Mapped[int] = mapped_column(Integer, nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    content_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    start_offset: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    end_offset: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        nullable=False,
+    )
+
+    document_version: Mapped[DocumentVersion] = relationship(back_populates="chunks")

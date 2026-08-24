@@ -1,8 +1,9 @@
 import pytest
-from sqlalchemy import Index, UniqueConstraint
+from sqlalchemy import CheckConstraint, Index, UniqueConstraint
 
 from app.domain.documents.models import (
     Document,
+    DocumentChunk,
     DocumentVersion,
     DocumentVersionStatus,
     InvalidDocumentVersionTransition,
@@ -117,3 +118,50 @@ def test_database_allows_only_one_active_version_per_document() -> None:
 
     assert active_index.unique is True
     assert {column.name for column in active_index.columns} == {"document_id"}
+
+
+def test_chunk_preserves_ordered_source_provenance() -> None:
+    chunk = DocumentChunk(
+        document_version_id="version-id",
+        position=2,
+        content="Billing review is required.",
+        content_sha256="b" * 64,
+        start_offset=128,
+        end_offset=155,
+    )
+
+    assert chunk.position == 2
+    assert chunk.content == "Billing review is required."
+    assert chunk.start_offset == 128
+    assert chunk.end_offset == 155
+    assert chunk.content_sha256 == "b" * 64
+
+
+def test_chunk_positions_are_unique_inside_a_document_version() -> None:
+    constraint = next(
+        constraint
+        for constraint in DocumentChunk.__table__.constraints
+        if isinstance(constraint, UniqueConstraint)
+        and constraint.name == "uq_document_chunks_version_position"
+    )
+
+    assert {column.name for column in constraint.columns} == {
+        "document_version_id",
+        "position",
+    }
+
+
+def test_chunk_database_constraints_protect_provenance() -> None:
+    check_names = {
+        constraint.name
+        for constraint in DocumentChunk.__table__.constraints
+        if isinstance(constraint, CheckConstraint)
+    }
+
+    assert check_names == {
+        "ck_document_chunks_non_negative_position",
+        "ck_document_chunks_non_negative_start",
+        "ck_document_chunks_ordered_offsets",
+        "ck_document_chunks_non_empty_content",
+        "ck_document_chunks_sha256_length",
+    }

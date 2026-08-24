@@ -6,17 +6,38 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-pgvector-336791)
 ![Status](https://img.shields.io/badge/status-active%20development-orange)
 
-An evidence-first backend for turning versioned operational documents into auditable answers.
+An evidence-first AI backend evolving into a reusable enterprise platform for governed AI agents, company knowledge, structured data, and business tools.
 
-Every answer must identify the supporting passages and document version used. When the available evidence is insufficient, the system must refuse to answer instead of producing an unsupported response.
+The current implementation is deliberately focused on the **Knowledge Core**: turning versioned operational documents into auditable answers. Every answer must identify the supporting passages and document version used. When the available evidence is insufficient, the system must refuse to answer instead of producing an unsupported response.
 
-## The problem
+## Enterprise product direction
+
+The longer-term product is not one chatbot or one agent. AI Knowledge Platform is intended to provide the shared infrastructure organizations repeatedly need when deploying AI:
+
+- identity, organizations, tenant isolation, and permissions;
+- governed knowledge and retrieval;
+- agent and tool authorization;
+- connectors to structured data and business systems;
+- an external AI Gateway boundary for model routing;
+- auditability, evaluation, observability, and usage metering.
+
+Specialized capabilities can then be enabled as modules instead of rebuilding the same infrastructure for every use case.
+
+Potential modules include a cited **Knowledge Agent**, a safe **Data / Text-to-SQL Agent**, and later workflow-specific agents for finance, operations, support, compliance, or analytics.
+
+The model-routing layer is intentionally treated as an external boundary. A deployment may use a direct approved provider, OmniRoute, or another compatible AI gateway without coupling business-domain code to that implementation.
+
+See [Enterprise product vision](docs/product/enterprise-vision.md) and [ADR-007: AI gateway boundary](docs/adr/ADR-007-ai-gateway-boundary.md).
+
+> Enterprise tenancy, agent runtime, connector catalog, gateway integration, and metering are roadmap capabilities. They are not presented as implemented features until working code and tests exist.
+
+## The first problem we are solving
 
 Operational teams depend on policies, manuals, and procedures that change over time. Finding a plausible answer is not enough: users need to know which source supports it and whether that source is still current.
 
-This project focuses on the backend controls required to make document-based answers traceable, testable, and safe to integrate with other systems.
+The Knowledge Core focuses on the backend controls required to make document-based answers traceable, testable, and safe to integrate with other systems.
 
-## Primary use case
+## Primary MVP use case
 
 An operations analyst asks:
 
@@ -55,11 +76,11 @@ If the indexed documents do not support a reliable answer, the response status i
 }
 ```
 
-The contract above defines the MVP target. The query endpoint is not implemented yet.
+The contract above defines the current MVP target. The query endpoint is not implemented yet.
 
-## Product guarantees
+## Knowledge Core guarantees
 
-The MVP is complete only when it can demonstrate that:
+The RAG MVP is complete only when it can demonstrate that:
 
 - document ingestion is idempotent;
 - document updates preserve version history;
@@ -68,37 +89,49 @@ The MVP is complete only when it can demonstrate that:
 - unsupported questions produce an explicit abstention;
 - retrieval quality and latency are measured against a versioned dataset.
 
-## Scope
+## MVP scope
 
-| In the RAG MVP | Deliberately deferred |
+| In the RAG MVP | Enterprise roadmap |
 |---|---|
-| UTF-8 text and Markdown documents | PDF parsing |
-| Document versioning | Text-to-SQL |
-| Parsing and deterministic chunking | Autonomous agents |
-| PostgreSQL and pgvector retrieval | Multiple vector databases |
-| Answers with citations or abstention | Web interface |
-| Versioned evaluation dataset | Multiple production LLM providers |
+| UTF-8 text and Markdown documents | Additional enterprise connectors and formats |
+| Document versioning | Organizations, tenants, and richer RBAC |
+| Parsing and deterministic chunking | Agent registry and controlled tool runtime |
+| PostgreSQL and pgvector retrieval | Data / Text-to-SQL tools |
+| Answers with citations or abstention | AI Gateway integration and model policies |
+| Versioned evaluation dataset | Usage metering and enterprise administration |
 
-Deferring these capabilities is a scope decision, not a claim that they are unimportant.
+Keeping these capabilities outside the first RAG milestone is a sequencing decision, not a limitation of the product direction.
+
+## Target enterprise architecture
+
+```mermaid
+flowchart TD
+    U["Business users / enterprise apps"] --> API["AI Knowledge Platform API"]
+
+    API --> ID["Identity / tenants / RBAC"]
+    API --> AG["Agent Runtime"]
+    API --> KB["Knowledge Core"]
+
+    AG --> TOOLS["Tool + Connector Registry"]
+    AG --> GW["AI Gateway Boundary"]
+    KB --> GW
+
+    TOOLS --> SYS["ERP / CRM / Warehouses / Internal APIs"]
+    KB --> DB[("PostgreSQL + pgvector")]
+
+    GW --> EXT["OmniRoute / compatible gateway / direct provider"]
+
+    AG --> OBS["Audit / traces / evaluation / metering"]
+    KB --> OBS
+```
+
+The current repository implements foundations primarily in the Identity and Knowledge Core paths. The remaining blocks describe the target product architecture.
 
 ## Demo datasets
 
 The business scenario uses a fictional organization with versioned operational policies and procedures. It demonstrates document updates, conflicting guidance, stale sources, and questions without sufficient evidence without exposing real company data.
 
 A separate public-domain literature corpus uses Dostoyevsky, Dante, and Plato to evaluate retrieval over long, conceptually dense texts. It is an evaluation corpus, not the business use case.
-
-## Target architecture
-
-```mermaid
-flowchart TD
-    A["Document API"] --> B["Ingestion pipeline"]
-    B --> C["PostgreSQL + pgvector"]
-    D["Query API"] --> C
-    C --> E["Answer with evidence"]
-    D --> E
-```
-
-Provider interfaces are introduced only at external boundaries that are expected to change. The domain should not depend directly on a model vendor SDK.
 
 ## Current status
 
@@ -135,7 +168,11 @@ A fluent answer is not evidence that retrieval works. Changes to parsing, chunki
 
 ### Keep abstractions at real boundaries
 
-LLM, embedding, storage, and retrieval implementations may change. Internal factories, interfaces, and layers are not added without a concrete use case.
+LLM, embedding, storage, gateway, and retrieval implementations may change. Internal factories, interfaces, and layers are not added without a concrete use case.
+
+### Separate enterprise policy from model infrastructure
+
+Tenant permissions, knowledge authorization, agent/tool policy, and business audit records belong to this platform. Provider translation, routing, provider fallback, and provider quota mechanics may be delegated to an AI gateway through a stable boundary.
 
 ### Test behavior, not implementation shape
 
@@ -191,7 +228,8 @@ python -m pip check
 
 ## Documentation
 
-- [Product brief](docs/product/product-brief.md)
+- [Enterprise product vision](docs/product/enterprise-vision.md)
+- [Product brief — current Knowledge Core MVP](docs/product/product-brief.md)
 - [Product requirements](docs/product/requirements.md)
 - [Success metrics](docs/product/success-metrics.md)
 - [Architecture decisions](docs/adr)
@@ -200,6 +238,9 @@ python -m pip check
 ## Known limitations
 
 - the end-to-end document-to-answer path is not implemented yet;
+- enterprise organization/tenant models are not implemented yet;
+- agent runtime and business connectors are not implemented yet;
+- AI Gateway integration is not implemented yet;
 - authentication has no refresh tokens, password recovery, MFA, or rate limiting yet;
 - local document storage is intended for development and single-instance deployments;
 - no retrieval benchmark has been published yet.

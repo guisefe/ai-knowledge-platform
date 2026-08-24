@@ -27,7 +27,7 @@ Potential modules include a cited **Knowledge Agent**, a safe **Data / Text-to-S
 
 The model-routing layer is intentionally treated as an external boundary. A deployment may use a direct approved provider, OmniRoute, or another compatible AI gateway without coupling business-domain code to that implementation.
 
-See [Enterprise product vision](docs/product/enterprise-vision.md) and [ADR-007: AI gateway boundary](docs/adr/ADR-007-ai-gateway-boundary.md).
+See [Enterprise product vision](docs/product/enterprise-vision.md), [ADR-007: AI gateway boundary](docs/adr/ADR-007-ai-gateway-boundary.md), and the [OmniRoute enterprise integration profile](docs/security/omniroute-enterprise-profile.md).
 
 > Enterprise tenancy, agent runtime, connector catalog, gateway integration, and metering are roadmap capabilities. They are not presented as implemented features until working code and tests exist.
 
@@ -232,6 +232,7 @@ python -m pip check
 - [Product brief — current Knowledge Core MVP](docs/product/product-brief.md)
 - [Product requirements](docs/product/requirements.md)
 - [Success metrics](docs/product/success-metrics.md)
+- [OmniRoute enterprise integration profile](docs/security/omniroute-enterprise-profile.md)
 - [Architecture decisions](docs/adr)
 - [Technical specifications](docs/specs)
 

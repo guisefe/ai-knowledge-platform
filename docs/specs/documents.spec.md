@@ -60,3 +60,6 @@ Supported version statuses:
 - list and get operations never expose another owner's documents;
 - deletion removes the document from current retrieval;
 - migrations and ownership constraints are validated against PostgreSQL.
+
+Deterministic processing of an uploaded version is defined separately in the
+[processing specification](processing.spec.md).

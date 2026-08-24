@@ -4,7 +4,7 @@
 
 AI Knowledge Platform is an enterprise AI foundation for connecting company knowledge, structured data, and business tools to governed AI agents through one reusable backend.
 
-The product goal is not to ship one chatbot. It is to provide the shared capabilities that organizations repeatedly need when they deploy AI: identity, tenant isolation, permissions, knowledge ingestion, retrieval, model access, tool execution, auditability, evaluation, and operational telemetry.
+The product goal is not to ship one chatbot. It is to provide the shared capabilities that organizations repeatedly need when they deploy AI: identity, tenant isolation, permissions, knowledge ingestion, retrieval, controlled model access, tool execution, auditability, evaluation, and operational telemetry.
 
 Specialized agents can then be enabled as modules instead of rebuilding that infrastructure for every use case.
 
@@ -15,13 +15,13 @@ Enterprise AI projects frequently repeat the same engineering work:
 - authentication and authorization;
 - document and data access;
 - retrieval and context construction;
-- model-provider integration;
+- model access and routing;
 - tool and API integration;
 - safety policies and execution controls;
 - audit logs and tracing;
 - evaluation and usage monitoring.
 
-AI Knowledge Platform centralizes those concerns into a reusable platform layer.
+AI Knowledge Platform centralizes those concerns into a reusable platform layer while keeping model-provider routing behind an external AI Gateway boundary.
 
 The expected business effect is shorter delivery time for new AI use cases, consistent governance across agents, and lower marginal engineering cost as the number of agents grows.
 
@@ -37,13 +37,13 @@ Examples:
 - register a SQL tool against an approved data source;
 - connect an ERP or CRM through a connector boundary;
 - assign an agent to one organization and a defined set of tools;
-- switch an LLM provider without changing business-domain code.
+- change model routing or provider infrastructure without changing business-domain code.
 
 ## Target users
 
 ### Platform administrator
 
-Configures organizations, users, roles, providers, connectors, policies, and deployment settings.
+Configures organizations, users, roles, model policies, connectors, agents, and deployment settings.
 
 ### AI/application builder
 
@@ -94,19 +94,37 @@ Inspects who accessed which source, which tools ran, which model configuration w
 - messaging/workflow systems;
 - custom connectors behind a stable contract.
 
-### 5. Governance and safety
+### 5. AI gateway boundary
+
+The platform should not rebuild the entire provider-routing ecosystem inside agent or knowledge-domain code.
+
+A deployable AI Gateway boundary can provide:
+
+- a normalized model API;
+- model/provider routing;
+- provider translation;
+- quotas and rate handling;
+- retries, fallback, and circuit breaking;
+- model usage and cost telemetry.
+
+OmniRoute is a candidate reference integration for this boundary because it exposes an OpenAI-compatible gateway and already implements provider routing, fallback, quota-aware scheduling, telemetry, MCP/A2A capabilities, and other operational concerns.
+
+OmniRoute is not a mandatory platform dependency. Deployments must remain able to use a direct provider or another compatible gateway through the same platform-owned contract.
+
+### 6. Governance and safety
 
 - RBAC and tenant isolation;
 - per-agent tool allowlists;
 - data-source permissions;
+- model/provider allowlists;
 - prompt-injection-resistant tool boundaries;
 - auditable executions;
 - secret isolation;
 - configurable limits and policies.
 
-### 6. Evaluation, observability, and metering
+### 7. Evaluation, observability, and metering
 
-- correlation IDs and traces;
+- correlation IDs and traces across platform and gateway calls;
 - retrieval and generation latency;
 - model and tool outcomes;
 - token/model usage where available;
@@ -134,6 +152,31 @@ A separate Text-to-SQL project can inform this module, but it should be integrat
 
 Potential verticals include finance, operations, support, compliance, and analytics. They should be created only after a real customer workflow justifies them.
 
+## Target enterprise shape
+
+```mermaid
+flowchart TD
+    U[Business users and enterprise applications] --> API[AI Knowledge Platform API]
+
+    API --> ID[Identity, tenants, RBAC]
+    API --> AG[Agent Runtime]
+    API --> KB[Knowledge Core]
+
+    AG --> TOOLS[Tool and Connector Registry]
+    AG --> GW[AI Gateway Boundary]
+    KB --> GW
+
+    TOOLS --> ERP[ERP / CRM / Warehouses / Internal APIs]
+    KB --> PG[(PostgreSQL + pgvector)]
+
+    GW --> OR[OmniRoute or compatible gateway]
+    GW --> DIRECT[Direct approved model provider]
+
+    AG --> AUDIT[Audit, traces, evaluation, metering]
+    KB --> AUDIT
+    GW --> AUDIT
+```
+
 ## Commercial forms
 
 The same core should be capable of supporting multiple delivery models over time:
@@ -151,7 +194,7 @@ The project is currently building the first platform capability: the Knowledge C
 
 Implemented foundations already include FastAPI, PostgreSQL/pgvector, authentication, versioned documents, tenant-like ownership isolation at the user boundary, storage abstraction, provider boundaries, tests, and CI.
 
-The next goal remains an evaluated end-to-end RAG path with citations and abstention. Enterprise tenancy, agent runtime, connectors, and metering are roadmap capabilities and must not be presented as implemented until working code and tests exist.
+The next goal remains an evaluated end-to-end RAG path with citations and abstention. Enterprise tenancy, agent runtime, connectors, gateway integration, and metering are roadmap capabilities and must not be presented as implemented until working code and tests exist.
 
 ## Product principle
 

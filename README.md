@@ -10,6 +10,20 @@ An evidence-first AI backend evolving into a reusable enterprise platform for go
 
 The current implementation is deliberately focused on the **Knowledge Core**: turning versioned operational documents into auditable answers. Every answer must identify the supporting passages and document version used. When the available evidence is insufficient, the system must refuse to answer instead of producing an unsupported response.
 
+## Engineering evidence at a glance
+
+This repository is designed to show how an AI system becomes trustworthy enough to integrate with business software—not just how to call a model.
+
+| Engineering concern | Evidence in the current codebase |
+| --- | --- |
+| **Safe knowledge lifecycle** | Versioned documents, idempotent registration, ownership isolation and soft deletion. |
+| **Reliable backend boundaries** | Async FastAPI, SQLAlchemy, Alembic and replaceable storage/LLM provider interfaces. |
+| **Security by default** | Argon2 password hashing, signed JWTs and authenticated document operations. |
+| **Quality gates** | Ruff, Mypy, unit/contract/PostgreSQL integration tests and GitHub Actions CI. |
+| **Honest AI boundary** | Retrieval, citations and abstention are an explicit next milestone; they are not claimed as shipped. |
+
+The engineering question guiding the MVP is: **can the platform return an answer that is traceable to the right document version, or reliably decline when its evidence is insufficient?**
+
 ## Enterprise product direction
 
 The longer-term product is not one chatbot or one agent. AI Knowledge Platform is intended to provide the shared infrastructure organizations repeatedly need when deploying AI:
